@@ -16,41 +16,102 @@ const iziToastContent = {
   theme: 'dark',
   maxWidth: '432px',
 };
+let page = 1;
+let userAnswer = '';
+const per_page = 15;
 
 const form = document.querySelector('.form');
 const loader = document.querySelector('.loader');
+const loadMoreBtn = document.querySelector('.pagination-btn');
 
 form.addEventListener(`submit`, onFormSubmit);
+loadMoreBtn.addEventListener(`click`, onLoadMoreBtnClick);
 
-function onFormSubmit(event) {
+async function onFormSubmit(event) {
   event.preventDefault();
-  const userAnswer = event.currentTarget.elements.searchText.value.trim();
+  userAnswer = event.currentTarget.elements.searchText.value.trim();
+  hideLoadMoreBtn();
+
   if (!userAnswer) {
+    iziToast.error({
+      message: 'Please,enter search word',
+      position: 'topRight',
+    });
     return;
   }
+  page = 1;
   cleanGallery();
   showLoader();
-  getImages(userAnswer)
-    .then(({ hits }) => {
-      if (hits.length === 0) {
-        iziToast.show(iziToastContent);
-        return;
-      }
-      renderGallery(hits);
-    })
-    .catch(error => {
-      console.log(error);
-      iziToast.error(iziToastContent);
-    })
-    .finally(() => {
-      form.reset();
-      hideLoader();
+  try {
+    const { hits, totalHits } = await getImages(userAnswer, page, per_page);
+
+    if (hits.length === 0) {
+      iziToast.show(iziToastContent);
+      return;
+    }
+
+    renderGallery(hits);
+    showLoadMoreBtn();
+    if (page * per_page >= totalHits) {
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+        messageColor: '#FAFAFB',
+      });
+      console.log('end');
+
+      hideLoadMoreBtn();
+    }
+  } catch (error) {
+    console.log(error);
+    iziToast.error(iziToastContent);
+  } finally {
+    form.reset();
+    hideLoader();
+  }
+}
+
+async function onLoadMoreBtnClick() {
+  showLoader();
+  page++;
+  try {
+    const { hits, totalHits } = await getImages(userAnswer, page, per_page);
+    renderGallery(hits);
+    const { height } = document
+      .querySelector(`.gallery-item`)
+      .getBoundingClientRect();
+
+    window.scrollBy({
+      top: height * 2,
+      behavior: 'smooth',
     });
+
+    if (page * per_page >= totalHits) {
+      hideLoadMoreBtn();
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+        messageColor: '#FAFAFB',
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    iziToast.error(iziToastContent);
+  } finally {
+    hideLoader();
+  }
 }
 
 function showLoader() {
-  loader.style.display = 'flex';
+  loader.classList.remove('hiden');
 }
 function hideLoader() {
-  loader.style.display = 'none';
+  loader.classList.add('hiden');
+}
+
+function showLoadMoreBtn() {
+  loadMoreBtn.style.display = 'block';
+}
+function hideLoadMoreBtn() {
+  loadMoreBtn.style.display = 'none';
 }
