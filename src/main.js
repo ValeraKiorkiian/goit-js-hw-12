@@ -103,10 +103,10 @@ async function onLoadMoreBtnClick() {
 }
 
 function showLoader() {
-  loader.classList.remove('hiden');
+  loader.style.display = 'flex';
 }
 function hideLoader() {
-  loader.classList.add('hiden');
+  loader.style.display = 'none';
 }
 
 function showLoadMoreBtn() {
