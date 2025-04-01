@@ -90,7 +90,7 @@
 }
 
 .loader {
-  display: flex;
+  display: none;
   margin: 0 auto;
   color: #800516;
   font-size: 45px;
